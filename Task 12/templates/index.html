@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Assistant | AI QnA Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #22d3ee;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 3rem;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 1.2rem 1.5rem;
+            border-radius: 1rem;
+            border: 2px solid #334155;
+            background: var(--card-bg);
+            color: white;
+            font-size: 1.1rem;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+
+        button#submit-btn {
+            position: absolute;
+            right: 0.6rem;
+            top: 0.6rem;
+            bottom: 0.6rem;
+            padding: 0 1.5rem;
+            border-radius: 0.75rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button#submit-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        #results {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid #334155;
+            transition: transform 0.2s ease;
+            animation: fadeIn 0.5s ease-out backwards;
+        }
+
+        .result-card:hover {
+            transform: scale(1.01);
+            border-color: var(--primary);
+        }
+
+        .result-question {
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+        }
+
+        .result-answer {
+            color: var(--text-main);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .loading {
+            text-align: center;
+            display: none;
+            color: var(--text-muted);
+            margin-top: 2rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.4rem;
+            font-size: 0.75rem;
+            background: #334155;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Mental Health Assistant</h1>
+            <p class="subtitle">Intelligent QnA Bot powered by Semantic Search</p>
+        </header>
+
+        <div class="search-box">
+            <input type="text" id="query-input" placeholder="How can I deal with stress?" autocomplete="off">
+            <button id="submit-btn">Search</button>
+        </div>
+
+        <div class="loading" id="loader">Processing query...</div>
+
+        <div id="results">
+            <!-- Results will be injected here -->
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('query-input');
+        const btn = document.getElementById('submit-btn');
+        const resultsDiv = document.getElementById('results');
+        const loader = document.getElementById('loader');
+
+        async function performSearch() {
+            const query = input.value.trim();
+            if (!query) return;
+
+            loader.style.display = 'block';
+            resultsDiv.innerHTML = '';
+
+            const formData = new FormData();
+            formData.append('query', query);
+
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                loader.style.display = 'none';
+
+                if (data.length === 0) {
+                    resultsDiv.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No results found.</p>';
+                    return;
+                }
+
+                data.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'result-card';
+                    card.style.animationDelay = `${index * 0.1}s`;
+                    
+                    card.innerHTML = `
+                        <div class="badge">Match Confidence: ${Math.max(0, (100 - (item.score * 10)).toFixed(1))}%</div>
+                        <div class="result-question">${item.question}</div>
+                        <div class="result-answer">${item.answer}</div>
+                    `;
+                    resultsDiv.appendChild(card);
+                });
+            } catch (error) {
+                loader.style.display = 'none';
+                console.error('Error:', error);
+            }
+        }
+
+        btn.addEventListener('click', performSearch);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+    </script>
+</body>
+</html>
